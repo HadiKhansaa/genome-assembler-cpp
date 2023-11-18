@@ -4,17 +4,19 @@
 #include <algorithm>
 #include <set>
 
-void writeToFile(const std::string& filePath, std::vector<std::pair<int, std::string>>& reads) {
-    std::ofstream f(filePath);
+using namespace std;
+
+void writeToFile(const string& filePath, vector<pair<int, string>>& reads) {
+    ofstream f(filePath);
     if (!f.is_open()) {
-        throw std::runtime_error("Could not open file: " + filePath);
+        throw runtime_error("Could not open file: " + filePath);
     }
 
-    std::set<int> seenIndexes;
+    set<int> seenIndexes;
     int i = 0;
 
     // Sort the reads based on their start position
-    std::sort(reads.begin(), reads.end(), [](const auto& a, const auto& b) {
+    sort(reads.begin(), reads.end(), [](const auto& a, const auto& b) {
         return a.first < b.first;
     });
 
@@ -28,7 +30,7 @@ void writeToFile(const std::string& filePath, std::vector<std::pair<int, std::st
         if (i >= read.first) { // Overlap
             start = i - read.first;
         } else { // Gap
-            f.write(std::string(read.first - i, '\n').c_str(), read.first - i);
+            f.write(string(read.first - i, '\n').c_str(), read.first - i);
             i = read.first;
         }
 

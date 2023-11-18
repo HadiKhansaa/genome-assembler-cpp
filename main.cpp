@@ -11,27 +11,27 @@ using namespace std;
 int main(){
 
     //create bwt and sa
-    std::pair<string, vector<int>> bwt_SA = construct_bwt_SA();
+    pair<string, vector<int>> bwt_SA = construct_bwt_SA();
     string bwt = bwt_SA.first;
     vector<int> SA = bwt_SA.second;
 
     //get the genome and reads
-    std::string genome;
+    string genome;
     vector<string> reads;
     try {
         genome = read_genome("genome.txt");
         reads = read_reads("reads.txt");
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+    } catch (const exception& e) {
+        cerr << "Error: " << e.what() << endl;
     }
     //indexing
     // Start indexing timer
-    auto start = std::chrono::high_resolution_clock::now();
-    std::pair<std::vector<int>, std::vector<std::vector<int>>> c_occ = index_bwt(bwt);
+    auto start = chrono::high_resolution_clock::now();
+    pair<vector<int>, vector<vector<int>>> c_occ = index_bwt(bwt);
     // Stop indexing timer
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "indexing time: " << duration.count()/1000.0 << " seconds" << std::endl;
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+    cout << "indexing time: " << duration.count()/1000.0 << " seconds" << endl;
 
     vector<int> c = c_occ.first;
     vector<vector<int>> occ = c_occ.second;
@@ -40,22 +40,22 @@ int main(){
     
     //aligning
     // Start aligning timer
-    start = std::chrono::high_resolution_clock::now();
+    start = chrono::high_resolution_clock::now();
     for(int i=0; i<reads.size(); i++)
     {
         string read = reads[i];
         // cout<<"Processing read "<<i<<" out of "<<reads.size()<<'\n';
-        vector<int> hits = search(bwt, read, SA, c, occ);
-        for(auto hit : hits){
+        vector<int> exact_hits = search_exact(bwt, read, SA, c, occ);
+        for(auto hit : exact_hits){
             pair<int, string> alignment = {hit, read};
             alignments.push_back(alignment);
         }
     }
     // Stop aligning timer
-    end = std::chrono::high_resolution_clock::now();
+    end = chrono::high_resolution_clock::now();
 
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "Aligning time: " << duration.count()/1000.0 << " seconds" << std::endl;
+    duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+    cout << "Aligning time: " << duration.count()/1000.0 << " seconds" << endl;
 
     writeToFile("assembled_genome.txt", alignments);
     return 0;
