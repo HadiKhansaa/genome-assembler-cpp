@@ -160,10 +160,10 @@ vector<int> search_inexact(const string& genome, const string& bwt, const string
 
     //call countMismatchesWithGenome to check if the number of mismatches in the read <=d
     for(int occ: currOccs) {
-        if(countMismatchesWithGenome(genome.substr(occ,l),read,d)) {
+        if(occ<genome.length() && countMismatchesWithGenome(genome.substr(occ,l),read,d)) {
             occs.push_back(occ);
         }
     }
-
+    
     return occs;
 }

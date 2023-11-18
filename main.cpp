@@ -48,7 +48,6 @@ int main(){
     {
         string read = reads[i];
 
-        // cout << "processing read " << i+1 << "\n";
         vector<int> exact_hits = search_exact(bwt, read, SA, first_occ, counts);
         
         if(exact_hits.size() == 0) { //if no exact match found for the current read, save it to align it later with mismatches
@@ -61,24 +60,27 @@ int main(){
         }
     }
 
-    //form longer contigs from the exact matches + array of gaps that exist for now
-    pair<vector<pair<int, string>>, vector<int>> contigs_gaps = alignMatches(genome.length(), alignments);
+    pair<vector<pair<int, string>>, vector<pair<int,int>>> contigs_gaps = alignMatches(genome.length(), alignments);
     vector<pair<int, string>> contigs = contigs_gaps.first;
-    vector<int> gaps = contigs_gaps.second;
+    vector<pair<int,int>> gaps = contigs_gaps.second;
+
+    // // form longer contigs from the exact matches + array of gaps that exist for now
+    // pair<vector<pair<int, string>>, vector<int>> contigs_gaps = alignMatches(genome.length(), alignments);
+    // vector<pair<int, string>> contigs = contigs_gaps.first;
+    // vector<int> gaps = contigs_gaps.second;
+
 
     // if we have gaps in the assembled genome and if we have reads that were not matched exactly, apply inexact matching to these reads
     if(unmatched_reads.size()>0 && gaps.size()>0) {
         vector<pair<int, string>> alignments_with_mismatches;
         int i = 1;
         for(const auto& read:unmatched_reads) {
-
-            // cout << "reprocessing read " << i++ << "\n";
+            
             vector<int> inexact_hits = search_inexact(genome, bwt, read, SA, first_occ,counts,1);
 
             for(int hit: inexact_hits) {
                 pair<int, string> alignment = {hit, read};
                 alignments_with_mismatches.push_back(alignment);
-                // cout << "[" << hit << ", " << read << "\n";
             }
 
         }
@@ -87,7 +89,6 @@ int main(){
         vector<pair<int, string>> new_contigs = alignMismatchesWithGaps(alignments_with_mismatches,gaps);
         for(const auto& pair:new_contigs) {
             contigs.push_back(pair);
-            // cout << "[" << pair.first << ", " << pair.second << "]\n";
         }
         contigs_gaps = alignMatches(genome.length(), contigs);
         contigs = contigs_gaps.first;
@@ -99,14 +100,21 @@ int main(){
     //     cout << "Index: " << pair.first << ", String: " << pair.second << endl;
     // }
 
-    // // Printing the contents of the gaps vector
+    // Printing the contents of the gaps vector
+    // cout << "\nGaps:" << endl;
+    // for(const auto& pair:gaps) {
+    //     cout << "[" << pair.first << ", " << pair.second << "]\n";
+    // }
+    // cout << endl;
+
     // cout << "\nGaps:" << endl;
     // for (int gap : gaps) {
     //     cout << gap << " ";
     // }
     // cout << endl;
 
-    writeToFile("assembled_genome.txt", contigs);
+    writeToFile("assembled_genome.txt", contigs, genome.length());
+    // writeToFile("assembled_genome.txt", contigs);
     
 
     // Stop aligning timer
