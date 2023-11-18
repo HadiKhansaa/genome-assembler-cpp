@@ -5,7 +5,7 @@
 
 // std::unordered_map<char, int> acgt_to_1234 = {{'$', 0}, {'A', 1}, {'C', 2}, {'G', 3}, {'N', 4}, {'T', 5}};
 
-
+//function to index bwt
 std::pair<std::vector<int>, std::vector<std::vector<int>>> index_bwt(const std::string& bwt) {
     std::vector<int> c(6, 0);
     for (char i : bwt) {
@@ -51,6 +51,7 @@ std::pair<std::vector<int>, std::vector<std::vector<int>>> index_bwt(const std::
     return {c, Occ};
 }
 
+//function to return the start and end positions of the sub_string in the bwt
 std::pair<int, int> search_in_bwt(const std::string& bwt, const std::string& sub_string, const std::vector<int>& c, const std::vector<std::vector<int>>& Occ) {
     int p = sub_string.size();
     int i = p - 1;
@@ -91,6 +92,7 @@ std::pair<int, int> search_in_bwt(const std::string& bwt, const std::string& sub
     return {sp, ep};
 }
 
+//function to search bwt for posssible position hits of a read
 std::vector<int> search(const std::string& bwt, const std::string& sub_string, const std::vector<int>& suffix_array, const std::vector<int>& c, const std::vector<std::vector<int>>& Occ) {
     std::pair<int, int> sp_ep = search_in_bwt(bwt, sub_string, c, Occ);
     int sp = sp_ep.first;
