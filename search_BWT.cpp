@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
+#include <set>
 
 using namespace std;
 // unordered_map<char, int> acgt_to_1234 = {{'$', 0}, {'A', 1}, {'C', 2}, {'G', 3}, {'N', 4}, {'T', 5}};
@@ -42,8 +43,8 @@ pair<vector<int>, vector<vector<int>>> index_bwt(const string& bwt) {
     }
 
     vector<vector<int>> Counts(6, vector<int>(bwt.size()+1, 0));
-    for (int i = 1; i < bwt.size(); ++i) {
-        if (i > 1) {
+    for (int i = 1; i < bwt.size()+1; ++i) {
+        if (i > 0) {
             Counts[0][i] = Counts[0][i - 1];
             Counts[1][i] = Counts[1][i - 1];
             Counts[2][i] = Counts[2][i - 1];
@@ -71,7 +72,7 @@ pair<int, int> search_in_bwt(const string& bwt, const string& read, const vector
     int i = p - 1;
     int character;
 
-    character = charToIndex(read[i-1]);
+    character = charToIndex(read[p-1]);
 
     int sp = first_occ[character];
     int ep = character == 5 ? bwt.size() - 1 : first_occ[character + 1] - 1;
@@ -98,4 +99,72 @@ vector<int> search_exact(const string& bwt, const string& read, const vector<int
     }
 
     return hits;
+}
+
+
+bool countMismatchesWithGenome(const string& sub_genome, const string& read, int d) {
+    int e = 0;
+    for(int i=0;i<sub_genome.length();i++) {
+        if(sub_genome[i] != read[i]) {
+            e++;
+            if(e>d) return false;
+        }
+    }
+    return true;
+}
+
+vector<int> search_inexact(const string& genome, const string& bwt, const string& read, const vector<int>& suffix_array, const vector<int>& first_occ, const vector<vector<int>>& Counts, int d) {
+    int l = read.length(); 
+    
+    set<int> currOccs;
+    vector<int> occs;
+    vector<pair<string, int>> seeds;
+    int k = l/(d+1);
+
+    // creating the d+1 seeds
+    for (int i = 0; i < d; ++i) {
+        seeds.push_back({read.substr(i * k, k), i * k});
+    }
+    seeds.push_back({read.substr(d * k), d * k});
+
+    //matching the seeds until an exact match among them is found
+    for (const auto& sead : seeds) {
+        string p = sead.first;
+        int offset = sead.second; 
+
+        int top = 0;
+        int bottom = bwt.length() - 1;
+        int currIndex = p.length() - 1;
+
+        while (top <= bottom) {
+            if (currIndex >= 0) {
+                char symbol = charToIndex(p[currIndex]);
+                currIndex--;
+                if (Counts.at(symbol)[bottom + 1] - Counts.at(symbol)[top] > 0) {
+                    top = first_occ.at(symbol) + Counts.at(symbol)[top];
+                    bottom = first_occ.at(symbol) + Counts.at(symbol)[bottom + 1] - 1;
+                } else {
+                    break; // no exact match for this seed
+                }
+            } else {
+                for (int i = top; i <= bottom; ++i) {
+                    int adjustedOcc = suffix_array[i] - offset; //position of exact match - offset = position of whole read
+                    if (adjustedOcc >= 0) {
+                        currOccs.insert(adjustedOcc);
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    //call countMismatchesWithGenome to check if the number of mismatches in the read <=d
+    for(int occ: currOccs) {
+        if(countMismatchesWithGenome(genome.substr(occ,l),read,d)) {
+            if(occ>0)   occ++;
+            occs.push_back(occ);
+        }
+    }
+
+    return occs;
 }
