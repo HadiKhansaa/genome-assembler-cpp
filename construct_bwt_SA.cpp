@@ -5,6 +5,7 @@
 #include <chrono>
 #include <sstream>
 #include "libsais.h"
+using namespace std;
 
 std::string read_genome(const std::string& path) {
     std::ifstream file(path);
@@ -16,6 +17,8 @@ std::string read_genome(const std::string& path) {
 }
 
 std::vector<std::string> read_reads(const std::string& path) {
+    //start timer
+    auto start = std::chrono::high_resolution_clock::now();
     std::ifstream file(path);
     if (!file.is_open()) {
         throw std::runtime_error("Could not open file: " + path);
@@ -28,7 +31,10 @@ std::vector<std::string> read_reads(const std::string& path) {
             reads.push_back(line);
         }
     }
-
+    //end timer
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+    std::cout << "Time taken to read reads: " << duration.count()/1000.0 << " seconds" << std::endl;
     return reads;
 }
 
@@ -56,13 +62,14 @@ std::vector<int> read_sa(const std::string& path) {
     return suffixArray;
 }
 
-int construct_bwt_SA() {
+//function to construct bwt and SA and return them
+pair<string, vector<int>> construct_bwt_SA () {
     std::string file_path = "./genome.txt";
 
     std::ifstream file(file_path);
     if (!file) {
         std::cerr << "Error opening file: " << file_path << std::endl;
-        return 1;
+        return {};
     }
 
     std::string nucleotides;
@@ -73,11 +80,11 @@ int construct_bwt_SA() {
     file.close();
 
     std::vector<uint8_t> uint8_nucleotides(nucleotides.begin(), nucleotides.end());
-    std::vector<int32_t> suffix_array(uint8_nucleotides.size(), 0);
+    std::vector<int> suffix_array(uint8_nucleotides.size(), 0);
     std::vector<uint8_t> bwt_output(uint8_nucleotides.size(), 0);
 
     auto start_sa = std::chrono::high_resolution_clock::now();
-
+    //suffix array construction
     int32_t status_sa = libsais(
         uint8_nucleotides.data(),
         suffix_array.data(),
@@ -86,24 +93,21 @@ int construct_bwt_SA() {
         NULL
     );
 
+    vector<int> SA;
+    SA.push_back(nucleotides.size());
+    for (size_t i = 0; i < suffix_array.size(); ++i) {
+        SA.push_back(suffix_array[i]);
+    }
     auto end_sa = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration_sa = end_sa - start_sa;
 
     if (status_sa != 0) {
         std::cerr << "Error constructing suffix array" << std::endl;
-        return 1;
+        return {};
     }
-
-    // Saving the suffix array to SA_Array.txt
-    std::ofstream output_sa("./SA.txt");
-    output_sa<<nucleotides.size()<<std::endl;
-    for (size_t i = 0; i < suffix_array.size(); ++i) {
-        output_sa << suffix_array[i] << std::endl;
-    }
-    output_sa.close(); // Close the file
 
     auto start_bwt = std::chrono::high_resolution_clock::now();
-
+    //bwt construction
     int32_t primary_index = libsais_bwt(
         uint8_nucleotides.data(),
         bwt_output.data(),
@@ -118,20 +122,20 @@ int construct_bwt_SA() {
 
     if (primary_index < 0) {
         std::cerr << "Error constructing BWT" << std::endl;
-        return 1;
+        return {};
     }
-
-    std::ofstream output_bwt("./bwt.txt");
-    for (size_t i = 0; i < bwt_output.size(); ++i) {
-        if (i == static_cast<size_t>(primary_index)) {
-            output_bwt << '$';
-        }
-        output_bwt << static_cast<char>(bwt_output[i]);
-    }
-    output_bwt.close(); // Close the file
 
     std::cout << "Time taken for Suffix Array construction: " << duration_sa.count() << " milliseconds" << '\n';
     std::cout << "Time taken for BWT construction: " << duration_bwt.count() << " milliseconds" << '\n';
 
-    return 0;
+    string bwt_string = "";
+    for (size_t i = 0; i < bwt_output.size(); ++i) {
+        if (i == static_cast<size_t>(primary_index)) {
+            bwt_string += '$';
+        }
+        bwt_string += static_cast<char>(bwt_output[i]);
+    }
+    
+    //return bwt and SA
+    return {bwt_string, SA};
 }

@@ -6,26 +6,25 @@
 #include "search_BWT.cpp"
 #include "construct_bwt_SA.cpp"
 #include "construct_output_genome.cpp"
-
 using namespace std;
+
 int main(){
 
     //create bwt and sa
-    construct_bwt_SA();
+    std::pair<string, vector<int>> bwt_SA = construct_bwt_SA();
+    string bwt = bwt_SA.first;
+    vector<int> SA = bwt_SA.second;
 
-    //we need the SA, bwt, c, Occ, genome
-    std::string bwt, genome;
-    std::vector<int> SA;
+    //get the genome and reads
+    std::string genome;
     vector<string> reads;
     try {
-        bwt = read_bwt("bwt.txt");
-        SA = read_sa("SA.txt");
         genome = read_genome("genome.txt");
         reads = read_reads("reads.txt");
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
-
+    //indexing
     // Start indexing timer
     auto start = std::chrono::high_resolution_clock::now();
     std::pair<std::vector<int>, std::vector<std::vector<int>>> c_occ = index_bwt(bwt);
@@ -39,6 +38,7 @@ int main(){
 
     vector<pair<int, string>> alignments;
     
+    //aligning
     // Start aligning timer
     start = std::chrono::high_resolution_clock::now();
     for(int i=0; i<reads.size(); i++)

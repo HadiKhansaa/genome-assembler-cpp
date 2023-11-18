@@ -9,7 +9,6 @@ def calculate_similarity(genome1, genome2):
 
     return similarity_score
 
-#main
 genome = ""
 assembeled_genome = ""
 with open("genome.txt", 'r') as f:
