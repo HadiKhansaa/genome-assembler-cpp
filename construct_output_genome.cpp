@@ -78,11 +78,6 @@ vector<pair<int, string>> extendContigs(int genome_len, vector<pair<int, string>
         return a.first < b.first;
     });
 
-    cout << "filling gaps with reads\n";
-    for(const auto& read : readsWithMismatches) {
-        cout << read.first << ": " << read.second<<"\n";
-    }
-
     int currentEnd = -1; // Tracks the end position of the last contig or read added
     size_t readIndex = 0; // Index for iterating through the reads
 
@@ -94,9 +89,8 @@ vector<pair<int, string>> extendContigs(int genome_len, vector<pair<int, string>
         while (readIndex < readsWithMismatches.size() && readsWithMismatches[readIndex].first < contigStart) {
             auto& read = readsWithMismatches[readIndex];
             int readEnd = read.first + read.second.length() - 1;
-
-            if (read.first > currentEnd) { // Check if the read fits in the gap
-                // Trim the read if it surpasses the genome length
+            if (read.first > currentEnd || readEnd > currentEnd) { // Check if the read fits in the gap
+                // Trim the read if it surpasses the next contig
                 if (readEnd >= contigStart) {
                     read.second = read.second.substr(0, contigStart - read.first);
                     readEnd = contigStart - 1;
