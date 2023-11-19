@@ -92,7 +92,7 @@ vector<pair<int, string>> extendContigs(int genome_len, vector<pair<int, string>
             if (read.first > currentEnd || readEnd > currentEnd) { // Check if the read fits in the gap
                 // Trim the read if it surpasses the next contig
                 if (readEnd >= contigStart) {
-                    read.second = read.second.substr(0, contigStart - read.first);
+                    read.second = read.second.substr(currentEnd - read.first, contigStart - read.first);
                     readEnd = contigStart - 1;
                     extendedContigs.push_back(read);
                     break;
