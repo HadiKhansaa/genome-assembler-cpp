@@ -69,26 +69,97 @@ vector<pair<int, string>> alignMismatchesWithGaps(vector<pair<int, string>>& mis
     return new_contigs;
 }
 
+
+vector<pair<int, string>> extendContigs(int genome_len, vector<pair<int, string>>& contigs, vector<pair<int, string>>& readsWithMismatches) {
+    vector<pair<int, string>> extendedContigs;
+
+    // Sort the reads by their starting positions
+    sort(readsWithMismatches.begin(), readsWithMismatches.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+
+    cout << "filling gaps with reads\n";
+    for(const auto& read : readsWithMismatches) {
+        cout << read.first << ": " << read.second<<"\n";
+    }
+
+    int currentEnd = -1; // Tracks the end position of the last contig or read added
+    size_t readIndex = 0; // Index for iterating through the reads
+
+    for (const auto& contig : contigs) {
+        int contigStart = contig.first; //1
+        int contigEnd = contig.first + contig.second.length() - 1; // 6
+
+        // Add all reads that fit in the gap before this contig
+        while (readIndex < readsWithMismatches.size() && readsWithMismatches[readIndex].first < contigStart) {
+            auto& read = readsWithMismatches[readIndex];
+            int readEnd = read.first + read.second.length() - 1;
+
+            if (read.first > currentEnd) { // Check if the read fits in the gap
+                // Trim the read if it surpasses the genome length
+                if (readEnd >= contigStart) {
+                    read.second = read.second.substr(0, contigStart - read.first);
+                    readEnd = contigStart - 1;
+                    extendedContigs.push_back(read);
+                    break;
+                }
+                extendedContigs.push_back(read);
+                currentEnd = readEnd;
+            }
+            ++readIndex;
+        }
+
+        // Add the contig if it extends beyond the last read or contig added
+        if (contigStart > currentEnd) {
+            extendedContigs.push_back(contig);
+            currentEnd = contigEnd;
+        }
+
+        // Move to the next contig
+    }
+
+    // Add any remaining reads that come after the last contig
+    while (readIndex < readsWithMismatches.size()) {
+        auto& read = readsWithMismatches[readIndex];
+        int readEnd = read.first + read.second.length() - 1;
+
+        if (read.first > currentEnd) {
+            // Trim the read if it surpasses the genome length
+            if (readEnd >= genome_len) {
+                read.second = read.second.substr(0, genome_len - read.first);
+                readEnd = genome_len - 1;
+            }
+            extendedContigs.push_back(read);
+            currentEnd = readEnd;
+        }
+        ++readIndex;
+    }
+
+    return extendedContigs;
+}
+
+
 // align matches to form longer contigs and return the remaining gaps
-pair<vector<pair<int, string>>, vector<pair<int, int>>> alignMatches(int genome_len, vector<pair<int, string>>& reads) {
+vector<pair<int, string>> alignMatches(int genome_len, vector<pair<int, string>>& reads) {
     set<int> seenIndexes;
     int i = 0, first_index = 0;
     string contig = "";
     vector<pair<int, string>> contigs;
-    vector<pair<int, int>> gaps;
+    // vector<pair<int, int>> gaps;
 
     // Sort the reads based on their start position
     sort(reads.begin(), reads.end(), [](const auto& a, const auto& b) {
         return a.first < b.first;
     });
 
-    // Check for a gap at the start
-    if (!reads.empty() && reads.front().first > 0) {
-        gaps.push_back({0, reads.front().first - 1});
-    }
+    // // Check for a gap at the start
+    // if (!reads.empty() && reads.front().first > 0) {
+    //     gaps.push_back({0, reads.front().first - 1});
+    // }
     
     for (const auto& read : reads) {
         // Only look at unique indexes
+        // what if the reads are of different lengths
         if (seenIndexes.find(read.first) != seenIndexes.end()) {
             continue;
         }
@@ -106,7 +177,7 @@ pair<vector<pair<int, string>>, vector<pair<int, int>>> alignMatches(int genome_
                 contigs.push_back({first_index, contig});
                 contig = "";
             }
-            gaps.push_back({i, read.first - 1});
+            // gaps.push_back({i, read.first - 1});
             first_index = read.first;
             contig += read.second;
             i = read.first + read.second.length();
@@ -118,12 +189,12 @@ pair<vector<pair<int, string>>, vector<pair<int, int>>> alignMatches(int genome_
         contigs.push_back({first_index, contig});
     }
 
-    // Add the last gap if the end of the last read is before the end of the genome
-    if(i < genome_len + 1) {
-        gaps.push_back({i, genome_len});
-    }
+    // // Add the last gap if the end of the last read is before the end of the genome
+    // if(i < genome_len + 1) {
+    //     gaps.push_back({i, genome_len});
+    // }
 
-    return {contigs, gaps};
+    return contigs;
 }
 
 
