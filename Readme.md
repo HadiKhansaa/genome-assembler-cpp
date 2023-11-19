@@ -27,3 +27,17 @@ Follow these steps to assemble your genome:
    - This file will contain a contig per line, representing the assembled sequences.
 
 Ensure that the input files `reads.txt` and `genome.txt` are correctly formatted and located in the same directory as the executable for the program to function properly.
+
+## Credits and Acknowledgments
+
+The **GenoWhisperers** team proudly developed this genome assembler. Team members include:
+
+- Ali Baydoun
+- Ali Saab
+- Fatima Dekmak
+- Hadi Al Khansa
+- Raphael El Fakhri
+
+We extend our sincere gratitude to Dr. Rida Assaf, our instructor who provided guidance and invaluable insights throughout the development process.
+
+Special thanks to Ilya Grebnov for the `libsais` library, which is we used for BWT and suffix array construction. The library can be found at [libsais GitHub repository](https://github.com/IlyaGrebnov/libsais).
