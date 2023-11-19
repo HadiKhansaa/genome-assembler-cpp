@@ -17,10 +17,8 @@ int main(){
 
     //get the genome and reads
     string genome;
-    vector<string> reads;
     try {
         genome = read_genome("genome.txt");
-        reads = read_reads("reads.txt");
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
     }
@@ -36,61 +34,73 @@ int main(){
     vector<int> first_occ = c_occ.first;
     vector<vector<int>> counts = c_occ.second;
 
-    vector<pair<int, string>> alignments;
-    vector<string> unmatched_reads;
+    vector<unsigned long> unmatched_reads;
     
     //aligning
     // Start aligning timer
     start = chrono::high_resolution_clock::now();
-    
-    // processing reads for the first time, allowing no mismatches
-    for(int i=0; i<reads.size(); i++)
-    {
-        string read = reads[i];
 
+    ReadFile readFile("reads.txt");
+    vector<pair<int, unsigned long>> alignments;
+    std::ifstream file("reads.txt");
+    std::string read;
+    unsigned long readId=1;
+    while(getline(file, read))
+    {     
         vector<int> exact_hits = search_exact(bwt, read, SA, first_occ, counts);
         
         if(exact_hits.size() == 0) { //if no exact match found for the current read, save it to align it later with mismatches
-            unmatched_reads.push_back(read);
+            unmatched_reads.push_back(readId);
         }
         
         for(auto hit : exact_hits){
-            pair<int, string> alignment = {hit, read};
+            pair<int, unsigned long> alignment = {hit, readId};
             alignments.push_back(alignment);
         }
+        readId++;
     }
 
-    pair<vector<pair<int, string>>, vector<pair<int,int>>> contigs_gaps = alignMatches(genome.length(), alignments);
-    vector<pair<int, string>> contigs = contigs_gaps.first;
+    std::ofstream contigTextFile("contigs.txt");
+    pair<vector<pair<int,  unsigned long>>, vector<pair<int,int>>> contigs_gaps = alignMatches(genome.length(), alignments, contigTextFile, readFile);
+    vector<pair<int, unsigned long>> contigs = contigs_gaps.first;
     vector<pair<int,int>> gaps = contigs_gaps.second;
 
-    // // form longer contigs from the exact matches + array of gaps that exist for now
-    // pair<vector<pair<int, string>>, vector<int>> contigs_gaps = alignMatches(genome.length(), alignments);
-    // vector<pair<int, string>> contigs = contigs_gaps.first;
-    // vector<int> gaps = contigs_gaps.second;
-
+    // cout << "Contigs:" << endl;
+    // for (const auto& pair : contigs) {
+    //     cout << "Index: " << pair.first << ", String: " << pair.second << endl;
+    // }
 
     // if we have gaps in the assembled genome and if we have reads that were not matched exactly, apply inexact matching to these reads
     if(unmatched_reads.size()>0 && gaps.size()>0) {
-        vector<pair<int, string>> alignments_with_mismatches;
+        vector<pair<int, unsigned long>> alignments_with_mismatches;
         int i = 1;
-        for(const auto& read:unmatched_reads) {
+        for(const auto& readId:unmatched_reads) {
             
-            vector<int> inexact_hits = search_inexact(genome, bwt, read, SA, first_occ,counts,1);
+            vector<int> inexact_hits = search_inexact(genome, bwt, readFile.getRead(readId), SA, first_occ,counts,1);
 
             for(int hit: inexact_hits) {
-                pair<int, string> alignment = {hit, read};
+                pair<int, unsigned long> alignment = {hit, readId};
                 alignments_with_mismatches.push_back(alignment);
             }
 
         }
 
         //if some reads where matched inexactly, try to fill the gaps with them
-        vector<pair<int, string>> new_contigs = alignMismatchesWithGaps(alignments_with_mismatches,gaps);
+        vector<pair<int, unsigned long>> new_contigs = alignMismatchesWithGaps(alignments_with_mismatches,gaps,contigTextFile,readFile);
+        
         for(const auto& pair:new_contigs) {
             contigs.push_back(pair);
         }
-        contigs_gaps = alignMatches(genome.length(), contigs);
+
+        
+    }
+
+    contigTextFile.close();
+
+    ReadFile contigFile("contigs.txt");
+    std::ofstream contigTextFile2("contigs.txt", std::ios::app);
+    if(unmatched_reads.size()>0 && gaps.size()>0) {
+        contigs_gaps = alignMatches(genome.length(), contigs, contigTextFile2, contigFile);
         contigs = contigs_gaps.first;
         gaps = contigs_gaps.second;
     }
@@ -99,6 +109,7 @@ int main(){
     // for (const auto& pair : contigs) {
     //     cout << "Index: " << pair.first << ", String: " << pair.second << endl;
     // }
+
 
     // Printing the contents of the gaps vector
     // cout << "\nGaps:" << endl;
@@ -112,10 +123,11 @@ int main(){
     //     cout << gap << " ";
     // }
     // cout << endl;
-
-    writeToFile("assembled_genome.txt", contigs, genome.length());
+    contigTextFile2.close();
+    ReadFile contigFile2("contigs.txt");
+    writeToFile("assembled_genome.txt", contigs, genome.length(), contigFile2);
     // writeToFile("assembled_genome.txt", contigs);
-    
+    contigTextFile.close();
 
     // Stop aligning timer
     end = chrono::high_resolution_clock::now();
