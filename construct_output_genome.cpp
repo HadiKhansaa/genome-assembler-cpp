@@ -5,7 +5,6 @@
 #include <iostream>
 #include <set>
 #include "index_reads.cpp"
-
 using namespace std;
 
 unsigned long currentContigId = 1;
@@ -78,7 +77,7 @@ vector<pair<int, unsigned long>> alignMismatchesWithGaps(vector<pair<int, unsign
 }
 
 // align current contigs to form longer contigs and return the remaining gaps
-pair<vector<pair<int, unsigned long>>, vector<pair<int, int>>> alignMatches(int genome_len, vector<pair<int, unsigned long>>& alignments, ofstream& contigFile, ReadFile& readFile) {
+pair<vector<pair<int, unsigned long>>, vector<pair<int, int>>> alignMatches(int genome_len, vector<pair<int, unsigned long>>& alignments, ofstream& contigFile, ReadFile& readFile, bool last_call) {
     int last_pos = 0, first_index = 0;
     string contig = "";
     vector<pair<int, unsigned long>> contigs;

@@ -49,6 +49,8 @@
         "compare": "cpp",
         "concepts": "cpp",
         "string_view": "cpp",
-        "numbers": "cpp"
+        "numbers": "cpp",
+        "codecvt": "cpp",
+        "iomanip": "cpp"
     }
 }

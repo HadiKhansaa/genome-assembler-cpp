@@ -19,14 +19,16 @@ string read_genome(const string& path) {
     // Read entire file content into a string
     string genome((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
     // Convert to uppercase
-    std::transform(genome.begin(), genome.end(), genome.begin(), ::toupper);
+    if (!genome.empty() && std::islower(genome[0])) {
+        std::transform(genome.begin(), genome.end(), genome.begin(), ::toupper);
+    }
 
     return genome;
 }
 
 //function to construct bwt and SA and return them
 pair<string, vector<int>> construct_bwt_SA () {
-    string file_path = "./reference.txt";
+    const string file_path = "./reference.txt";
 
     ifstream file(file_path);
     if (!file) {
@@ -39,8 +41,8 @@ pair<string, vector<int>> construct_bwt_SA () {
     while (file >> line) {
         nucleotides += line;
     }
-    
-    std::transform(nucleotides.begin(), nucleotides.end(), nucleotides.begin(), ::toupper);
+    if (!nucleotides.empty() && std::islower(nucleotides[0])) 
+        std::transform(nucleotides.begin(), nucleotides.end(), nucleotides.begin(), ::toupper);
     file.close();
 
     vector<uint8_t> uint8_nucleotides(nucleotides.begin(), nucleotides.end());
@@ -89,8 +91,8 @@ pair<string, vector<int>> construct_bwt_SA () {
         return {};
     }
 
-    cout << "Time taken for Suffix Array construction: " << duration_sa.count() << " milliseconds" << '\n';
-    cout << "Time taken for BWT construction: " << duration_bwt.count() << " milliseconds" << '\n';
+    std::cout << "Time taken for Suffix Array construction: " << duration_sa.count() << " milliseconds" << '\n';
+    std::cout << "Time taken for BWT construction: " << duration_bwt.count() << " milliseconds" << '\n';
 
     string bwt_string = "";
     for (size_t i = 0; i < bwt_output.size(); ++i) {

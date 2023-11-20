@@ -58,8 +58,17 @@ public:
         file.seekg(index[readID]);
         std::string line;
         std::getline(file, line);
-        std::transform(line.begin(), line.end(), line.begin(), ::toupper);
+        if (!line.empty() && std::islower(line[0]))
+            std::transform(line.begin(), line.end(), line.begin(), ::toupper);
         return line;
+    }
+
+    int close() {
+        if (file.is_open()) {
+            file.close();
+            return 1;
+        }
+        return 0;
     }
 };
 

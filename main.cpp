@@ -3,10 +3,28 @@
 #include <iostream>
 #include <chrono>
 #include <unordered_map>
+#include <filesystem>
 #include "search_BWT.cpp"
 #include "construct_bwt_SA.cpp"
 #include "construct_output_genome.cpp"
 using namespace std;
+namespace fs = std::filesystem;
+
+int rename_and_overwrite_file(string oldName, string newName){
+    try {
+        // Check if the new file name already exists
+        if (fs::exists(newName)) {
+            // Remove the existing file (or you can rename it)
+            fs::remove(newName);
+        }
+        // Now rename the old file to the new name
+        fs::rename(oldName, newName);
+        std::cout << "File successfully renamed and overwritten" << std::endl;
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << e.what() << std::endl;
+    }
+    return 1;
+}
 
 int main(){
 
@@ -29,7 +47,7 @@ int main(){
     // Stop indexing timer
     auto end = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    cout << "indexing time: " << duration.count()/1000.0 << " seconds" << endl;
+    std::cout << "indexing time: " << duration.count()/1000.0 << " seconds" << endl;
 
     vector<int> first_occ = c_occ.first;
     vector<vector<int>> counts = c_occ.second;
@@ -50,7 +68,9 @@ int main(){
     while(getline(file, read))
     {     
         
-        std::transform(read.begin(), read.end(), read.begin(), ::toupper);
+        if (!read.empty() && std::islower(read[0])) {
+            std::transform(read.begin(), read.end(), read.begin(),::toupper);
+        }
 
         vector<int> exact_hits = search_exact(bwt, read, SA, first_occ, counts);
         
@@ -72,7 +92,7 @@ int main(){
         writing them into a file, and spotting the current gaps in the genome
     */
     std::ofstream contigTextFile("contigs.txt");
-    pair<vector<pair<int,  unsigned long>>, vector<pair<int,int>>> contigs_gaps = alignMatches(genome.length(), alignments, contigTextFile, readFile);
+    pair<vector<pair<int,  unsigned long>>, vector<pair<int,int>>> contigs_gaps = alignMatches(genome.length(), alignments, contigTextFile, readFile, false);
     vector<pair<int, unsigned long>> contigs = contigs_gaps.first;
     vector<pair<int,int>> gaps = contigs_gaps.second;
 
@@ -86,7 +106,7 @@ int main(){
         for(const auto& readId:unmatched_reads) {
             string read = readFile.getRead(readId);
                 
-            vector<int> inexact_hits = search_inexact(genome, bwt, read, SA, first_occ,counts,1);
+            vector<int> inexact_hits = search_inexact(genome, bwt, read, SA, first_occ,counts, 3);
 
             // add the hits to alignments to be used later to fill gaps
             for(int hit: inexact_hits) {
@@ -109,25 +129,28 @@ int main(){
 
     // call alignMatches again on the combined contigs to form longer contigs if possible
     ReadFile contigFile("contigs.txt");
-    std::ofstream contigTextFile2("contigs.txt", std::ios::app);
     if(unmatched_reads.size()>0 && gaps.size()>0) {
-        contigs_gaps = alignMatches(genome.length(), contigs, contigTextFile2, contigFile);
+        std::ofstream contigTextFile2("assembled_genome.txt");
+        contigs_gaps = alignMatches(genome.length(), contigs, contigTextFile2, contigFile, true);
         contigs = contigs_gaps.first;
         gaps = contigs_gaps.second;
+        contigTextFile2.close();
+    }
+    else{
+        contigFile.close();
+        std::cout << "No gaps to fill" << endl;
+        rename_and_overwrite_file("contigs.txt", "assembled_genome.txt");
     }
 
-    contigTextFile2.close();
-
     // write the output contigs into a file 
-    ReadFile contigFile2("contigs.txt");
-    writeToFile("assembled_genome.txt", contigs, contigFile2);
-    contigTextFile.close();
+    // ReadFile contigFile2("contigs.txt");
+    // writeToFile("assembled_genome.txt", contigs, contigFile2);
 
     // Stop aligning timer
     end = chrono::high_resolution_clock::now();
 
     duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-    cout << "Aligning time: " << duration.count()/1000.0 << " seconds" << endl;
+    std::cout << "Aligning time: " << duration.count()/1000.0 << " seconds" << endl;
 
     // writeToFile("assembled_genome.txt", alignments);
     return 0;
